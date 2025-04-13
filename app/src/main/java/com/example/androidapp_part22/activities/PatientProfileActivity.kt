@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.example.androidapp_part22.R
 import com.example.androidapp_part22.fragments.BillingFragment
+import com.example.androidapp_part22.fragments.DiagnosisFragment
 import com.example.androidapp_part22.fragments.JournalFragment
 import com.example.androidapp_part22.fragments.MedicationsFragment
 import com.example.androidapp_part22.fragments.ReportsFragment
@@ -52,8 +53,7 @@ class PatientProfileActivity : AppCompatActivity() {
 
     // Tab indices
     private val TAB_JOURNAL = 0
-    private val TAB_REPORTS = 1
-    private val TAB_MEDICATIONS = 2
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,9 +81,11 @@ class PatientProfileActivity : AppCompatActivity() {
         // Setup tabs
         setupTabLayout()
 
-        // Load the default fragment (Journal)
+        // Load the default fragment (Hx/Journal)
         loadFragment(JournalFragment.newInstance(patient))
     }
+
+
     // In initViews() method in PatientProfileActivity.kt
     private fun initViews() {
         // Toolbar views
@@ -213,18 +215,20 @@ class PatientProfileActivity : AppCompatActivity() {
         // Clear existing tabs if any
         tabLayout.removeAllTabs()
 
-        // Add tabs
-        tabLayout.addTab(tabLayout.newTab().setText("Journal"))
-        tabLayout.addTab(tabLayout.newTab().setText("Reports"))
-        tabLayout.addTab(tabLayout.newTab().setText("Medications"))
+        // Add tabs with icons and text
+        tabLayout.addTab(tabLayout.newTab().setText("Hx").setIcon(R.drawable.ic_history_tab))
+        tabLayout.addTab(tabLayout.newTab().setText("Dx").setIcon(R.drawable.ic_diagnosis_tab))
+        tabLayout.addTab(tabLayout.newTab().setText("Labs").setIcon(R.drawable.ic_labs_tab))
+        tabLayout.addTab(tabLayout.newTab().setText("Rx").setIcon(R.drawable.ic_rx_tab))
 
         // Set tab selection listener
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 when (tab.position) {
-                    TAB_JOURNAL -> loadFragment(JournalFragment.newInstance(patient))
-                    TAB_REPORTS -> loadFragment(ReportsFragment.newInstance(patient))
-                    TAB_MEDICATIONS -> loadFragment(MedicationsFragment.newInstance(patient))
+                    0 -> loadFragment(JournalFragment.newInstance(patient))  // Hx (History)
+                    1 -> loadFragment(DiagnosisFragment.newInstance(patient))  // Dx (Diagnosis)
+                    2 -> loadFragment(ReportsFragment.newInstance(patient))  // Labs
+                    3 -> loadFragment(MedicationsFragment.newInstance(patient))  // Rx
                 }
             }
 

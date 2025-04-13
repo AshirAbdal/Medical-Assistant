@@ -134,6 +134,7 @@
     </androidx.cardview.widget.CardView>
 
     <!-- Menu Tabs -->
+    <!-- Menu Tabs -->
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayout"
         android:layout_width="match_parent"
@@ -148,17 +149,22 @@
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Journal" />
+            android:text="Hx" />
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Reports" />
+            android:text="Dx" />
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Medications" />
+            android:text="Labs" />
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Rx" />
     </com.google.android.material.tabs.TabLayout>
 
     <!-- Fragment Container -->
