@@ -1,6 +1,10 @@
 package com.example.androidapp_part22.activities
 
+
 import android.app.DatePickerDialog
+import android.graphics.PorterDuff
+import android.widget.ImageView
+import androidx.core.content.ContextCompat
 import android.app.TimePickerDialog
 import android.content.Intent
 import android.os.Bundle
@@ -160,6 +164,36 @@ class PatientProfileActivity : AppCompatActivity() {
             .show()
     }
 
+
+    private fun updateCustomTabViews() {
+        for (i in 0 until tabLayout.tabCount) {
+            val tab = tabLayout.getTabAt(i)
+            val customView = tab?.customView ?: continue
+
+            val tabText = customView.findViewById<TextView>(R.id.tabText)
+            val tabIcon = customView.findViewById<ImageView>(R.id.tabIcon)
+
+            val isSelected = i == tabLayout.selectedTabPosition
+
+            // Set text color
+            tabText.setTextColor(
+                if (isSelected)
+                    ContextCompat.getColor(this, R.color.brand_green)
+                else
+                    ContextCompat.getColor(this, android.R.color.darker_gray)
+            )
+
+            // Set icon color
+            tabIcon.setColorFilter(
+                if (isSelected)
+                    ContextCompat.getColor(this, R.color.brand_green)
+                else
+                    ContextCompat.getColor(this, android.R.color.darker_gray),
+                PorterDuff.Mode.SRC_IN
+            )
+        }
+    }
+
     // In showPatientBilling() in PatientProfileActivity.kt
     private fun showPatientBilling() {
         // Load the billing fragment for this specific patient
@@ -215,11 +249,11 @@ class PatientProfileActivity : AppCompatActivity() {
         // Clear existing tabs if any
         tabLayout.removeAllTabs()
 
-        // Add tabs with icons and text
-        tabLayout.addTab(tabLayout.newTab().setText("Hx").setIcon(R.drawable.ic_history_tab))
-        tabLayout.addTab(tabLayout.newTab().setText("Dx").setIcon(R.drawable.ic_diagnosis_tab))
-        tabLayout.addTab(tabLayout.newTab().setText("Labs").setIcon(R.drawable.ic_labs_tab))
-        tabLayout.addTab(tabLayout.newTab().setText("Rx").setIcon(R.drawable.ic_rx_tab))
+        // Create and add custom tabs with text and icon
+        addCustomTab("Hx", R.drawable.ic_history_tab)
+        addCustomTab("Dx", R.drawable.ic_diagnosis_tab)
+        addCustomTab("Labs", R.drawable.ic_labs_tab)
+        addCustomTab("Rx", R.drawable.ic_rx_tab)
 
         // Set tab selection listener
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
@@ -230,12 +264,37 @@ class PatientProfileActivity : AppCompatActivity() {
                     2 -> loadFragment(ReportsFragment.newInstance(patient))  // Labs
                     3 -> loadFragment(MedicationsFragment.newInstance(patient))  // Rx
                 }
+                updateCustomTabViews()
             }
 
-            override fun onTabUnselected(tab: TabLayout.Tab?) { /* Not needed */ }
+            override fun onTabUnselected(tab: TabLayout.Tab?) {
+                // Update tab appearance when unselected
+                updateCustomTabViews()
+            }
+
             override fun onTabReselected(tab: TabLayout.Tab?) { /* Not needed */ }
         })
+
+        // Set initial tab appearance
+        updateCustomTabViews()
     }
+
+    private fun addCustomTab(text: String, iconResId: Int) {
+        val tab = tabLayout.newTab()
+
+        // Create custom tab view with text first, then icon
+        val tabView = LayoutInflater.from(this).inflate(R.layout.custom_tab_layout, null)
+        val tabText = tabView.findViewById<TextView>(R.id.tabText)
+        val tabIcon = tabView.findViewById<ImageView>(R.id.tabIcon)
+
+        tabText.text = text
+        tabIcon.setImageResource(iconResId)
+
+        tab.customView = tabView
+        tabLayout.addTab(tab)
+    }
+
+
 
     private fun loadFragment(fragment: Fragment) {
         supportFragmentManager.beginTransaction()

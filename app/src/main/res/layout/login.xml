@@ -64,25 +64,25 @@
                 android:id="@+id/errorMessageTextView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Please provide both Username and Password"
+                android:text="Invalid credentials"
                 android:textColor="#FF0000"
                 android:background="#FFE0E0"
                 android:padding="8dp"
                 android:visibility="gone"
                 android:layout_marginBottom="16dp" />
 
-            <!-- Username Input -->
+            <!-- Email Input -->
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/usernameTextInputLayout"
+                android:id="@+id/emailTextInputLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Username *">
+                android:hint="Email *">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/usernameEditText"
+                    android:id="@+id/emailEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="text" />
+                    android:inputType="textEmailAddress" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -102,21 +102,6 @@
 
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Organization Code Input -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/orgCodeTextInputLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Organization Code *">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/orgCodeEditText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="text" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
             <!-- Sign in Button -->
             <Button
                 android:id="@+id/signInButton"
@@ -126,6 +111,15 @@
                 android:layout_marginTop="16dp"
                 android:backgroundTint="#4CAF50"
                 android:textColor="#FFFFFF" />
+
+            <!-- Progress Bar -->
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="16dp"
+                android:visibility="gone" />
 
         </LinearLayout>
 

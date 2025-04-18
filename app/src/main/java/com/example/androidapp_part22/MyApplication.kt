@@ -7,8 +7,10 @@ import android.content.res.Configuration
 import android.os.Build
 import android.preference.PreferenceManager
 import androidx.appcompat.app.AppCompatDelegate
+import dagger.hilt.android.HiltAndroidApp
 import java.util.Locale
 
+@HiltAndroidApp
 class MyApplication : Application(), SharedPreferences.OnSharedPreferenceChangeListener {
 
     private lateinit var prefs: SharedPreferences

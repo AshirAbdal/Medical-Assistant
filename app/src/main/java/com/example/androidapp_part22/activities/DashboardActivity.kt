@@ -12,11 +12,10 @@ import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import com.example.androidapp_part22.R
+import com.example.androidapp_part22.auth.SessionManager
 import com.example.androidapp_part22.fragments.AllPatientsFragment
 import com.example.androidapp_part22.fragments.BillingFragment
 import com.example.androidapp_part22.fragments.MyPatientsFragment
@@ -24,11 +23,19 @@ import com.example.androidapp_part22.fragments.PatientListFragment
 import com.example.androidapp_part22.fragments.ScheduleFragment
 import com.example.androidapp_part22.fragments.SettingsFragment
 import com.example.androidapp_part22.fragments.UpcomingAppointmentsFragment
+import com.example.androidapp_part22.repository.AuthRepository
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-public final class DashboardActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener {
+@AndroidEntryPoint
+class DashboardActivity : BaseAuthenticatedActivity(), SharedPreferences.OnSharedPreferenceChangeListener {
+
     private lateinit var searchInput: TextInputEditText
     private lateinit var searchLayout: TextInputLayout
     private lateinit var searchButton: ImageButton
@@ -36,28 +43,48 @@ public final class DashboardActivity : AppCompatActivity(), SharedPreferences.On
     private lateinit var menuButton: ImageButton
     private lateinit var toolbarTitle: TextView
     private lateinit var tabLayout: TabLayout
-    private lateinit var prefs: SharedPreferences
+    private lateinit var appPrefs: SharedPreferences
     private var currentSearchListener: SearchListener? = null
     private var isSearchVisible = false
+
+    @Inject
+    lateinit var authRepository: AuthRepository
 
     // Tab indices - updated after removing Settings tab
     val TAB_MY_PATIENTS = 0
     val TAB_ALL_PATIENTS = 1
     val TAB_SCHEDULE = 2
 
+    override fun hasRequiredRole(): Boolean {
+        // Allow doctors to access the dashboard
+        return sessionManager.isDoctor()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        prefs.registerOnSharedPreferenceChangeListener(this)
+        // The BaseAuthenticatedActivity will check session validity first
+        super.onCreate(savedInstanceState)
+
+        // If authentication check passed, continue with normal initialization
+        appPrefs = PreferenceManager.getDefaultSharedPreferences(this)
+        appPrefs.registerOnSharedPreferenceChangeListener(this)
 
         applySavedTheme()
-        super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dashboard)
+
+        // Update toolbar with user info
+        updateUserInfo()
 
         initViews()
         setupSearchView()
         setupTabLayout()
         loadInitialFragment()
         setupTouchListener()
+    }
+
+    private fun updateUserInfo() {
+        // You can use the sessionManager to display the user's name or other info in the UI
+        val userName = sessionManager.getName() ?: "Doctor"
+        // Update UI if needed
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -91,10 +118,10 @@ public final class DashboardActivity : AppCompatActivity(), SharedPreferences.On
     }
 
     private fun applySavedTheme() {
-        when (prefs.getString("theme", "System Default")) {
-            "Light" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-            "Dark" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            else -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        when (appPrefs.getString("theme", "System Default")) {
+            "Light" -> androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO)
+            "Dark" -> androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES)
+            else -> androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         }
     }
 
@@ -202,11 +229,16 @@ public final class DashboardActivity : AppCompatActivity(), SharedPreferences.On
             .setTitle("Logout")
             .setMessage("Are you sure you want to logout?")
             .setPositiveButton("Yes") { _, _ ->
-                // Navigate to LoginActivity
-                val intent = Intent(this, LoginActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                finish()
+                // Perform logout via the repository
+                CoroutineScope(Dispatchers.Main).launch {
+                    authRepository.logout()
+
+                    // After logout is complete, redirect to login screen
+                    val intent = Intent(this@DashboardActivity, LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                }
             }
             .setNegativeButton("No", null)
             .show()
@@ -402,7 +434,7 @@ public final class DashboardActivity : AppCompatActivity(), SharedPreferences.On
 
     override fun onDestroy() {
         super.onDestroy()
-        prefs.unregisterOnSharedPreferenceChangeListener(this)
+        appPrefs.unregisterOnSharedPreferenceChangeListener(this)
     }
 }
 
