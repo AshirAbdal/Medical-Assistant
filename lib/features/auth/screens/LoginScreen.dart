@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'Dashboard.dart';
+import '../../../dashboard/screens/Dashboard.dart';
 
 // Remove the FirstPage import as we'll use Dashboard instead
 class Loginscreen extends StatefulWidget {
