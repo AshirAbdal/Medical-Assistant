@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../dashboard/screens/Dashboard.dart';
+import '../../../services/auth_service.dart'; // Import the auth service
+import '../../../services/storage_service.dart'; // Import the storage service
 
-// Remove the FirstPage import as we'll use Dashboard instead
 class Loginscreen extends StatefulWidget {
   const Loginscreen({super.key});
 
@@ -14,6 +15,13 @@ class _LoginscreenState extends State<Loginscreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
+  final AuthService _authService = AuthService(); // Initialize auth service
+  final StorageService _storageService = StorageService(); // Initialize storage service
+  bool _isLoading = false; // Add loading state
+
+  // Add state for password visibility
+  bool _obscurePassword = true;
+
   bool _emailError = false;
   bool _passwordError = false;
 
@@ -24,35 +32,75 @@ class _LoginscreenState extends State<Loginscreen> {
     super.dispose();
   }
 
-  void _validateAndSubmit() {
+  Future<void> _validateAndSubmit() async {
     setState(() {
       _emailError = emailController.text.isEmpty;
       _passwordError = passwordController.text.isEmpty;
+      _isLoading = true;
     });
 
     if (!_emailError && !_passwordError) {
-      // Check dummy credentials
-      if (emailController.text == "test@test.com" &&
-          passwordController.text == "123456") {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login Successful!'),
-            backgroundColor: Colors.green,
-          ),
+      try {
+        // Call the API through the auth service
+        final response = await _authService.login(
+          emailController.text,
+          passwordController.text,
         );
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const Dashboard()),
-        );
-      } else {
+        // Set loading to false when API call completes
+        setState(() {
+          _isLoading = false;
+        });
+
+        if (response['success']) {
+          // Save user data and token
+          if (response['user'] != null) {
+            await _storageService.saveUserData(response['user']);
+          }
+
+          if (response['token'] != null) {
+            await _storageService.saveToken(response['token']);
+          }
+
+          // Handle successful login
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Login Successful!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          // Navigate to dashboard
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const Dashboard()),
+          );
+        } else {
+          // Handle login failure
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response['message'] ?? 'Login failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        // Handle errors
+        setState(() {
+          _isLoading = false;
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid email or password'),
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
       }
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -174,10 +222,10 @@ class _LoginscreenState extends State<Loginscreen> {
 
                       const SizedBox(height: 15),
 
-                      // Password field
+                      // Password field with eye icon
                       TextField(
                         controller: passwordController,
-                        obscureText: true,
+                        obscureText: _obscurePassword, // Use the state variable here
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
                           labelText: 'Password *',
@@ -194,16 +242,39 @@ class _LoginscreenState extends State<Loginscreen> {
                             borderRadius: BorderRadius.circular(5),
                             borderSide: BorderSide(color: _passwordError ? Colors.red : Colors.grey[500]!),
                           ),
-                          suffixIcon: _passwordError
-                              ? Padding(
-                            padding: const EdgeInsets.only(right: 15),
-                            child: Icon(
-                              Icons.error,
-                              color: Colors.red[700],
-                              size: 20,
-                            ),
-                          )
-                              : null,
+                          // Add toggle eye icon
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Eye icon for password visibility
+                              IconButton(
+                                icon: Icon(
+                                  // Change the icon based on the state
+                                  _obscurePassword
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                  color: Colors.grey[600],
+                                  size: 22,
+                                ),
+                                onPressed: () {
+                                  // Toggle password visibility
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                              ),
+                              // Error icon if needed
+                              if (_passwordError)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 15),
+                                  child: Icon(
+                                    Icons.error,
+                                    color: Colors.red[700],
+                                    size: 20,
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                         onChanged: (_) {
                           if (_passwordError) setState(() => _passwordError = false);
@@ -237,8 +308,13 @@ class _LoginscreenState extends State<Loginscreen> {
                             ),
                             elevation: 0,
                           ),
-                          onPressed: _validateAndSubmit,
-                          child: const Text(
+                          onPressed: _isLoading ? null : _validateAndSubmit,
+                          child: _isLoading
+                              ? const CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          )
+                              : const Text(
                             'Sign in',
                             style: TextStyle(
                               fontSize: 16,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../features/auth/screens/LoginScreen.dart';
+import '../../services/storage_service.dart';
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String title;
@@ -19,11 +20,42 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
 class _CustomAppBarState extends State<CustomAppBar> {
   bool _showSearchBar = false;
   final TextEditingController _searchController = TextEditingController();
+  final StorageService _storageService = StorageService();
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  // Logout function
+  Future<void> _logout() async {
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
+
+    // Clear stored user data
+    await _storageService.clearAll();
+
+    // Close loading dialog
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+
+    // Navigate to login screen
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const Loginscreen()),
+            (route) => false, // This removes all previous routes
+      );
+    }
   }
 
   @override
@@ -97,15 +129,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
               // Navigate to help page
                 break;
               case 'logout':
-              // Handle logout - clear session data and navigate to login
-              // Clear any stored session data/tokens here
-              // Example: await SharedPreferences.getInstance().then((prefs) => prefs.clear());
-
-              // Navigate to login screen and remove all previous routes
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const Loginscreen()),
-                      (route) => false, // This removes all previous routes
-                );
+                _logout();
                 break;
             }
           },
