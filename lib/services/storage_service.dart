@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageService {
-  // Keys
+  // Keys for storing authentication data
   static const String userKey = 'user_data';
   static const String tokenKey = 'auth_token';
+  static const String tokenExpiryKey = 'token_expiry';
 
   // Save user data to local storage
   Future<bool> saveUserData(Map<String, dynamic> userData) async {
@@ -16,6 +17,12 @@ class StorageService {
   Future<bool> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.setString(tokenKey, token);
+  }
+
+  // Save token expiry timestamp
+  Future<bool> saveTokenExpiry(int expiryTimestamp) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.setInt(tokenExpiryKey, expiryTimestamp);
   }
 
   // Get user data
@@ -36,9 +43,25 @@ class StorageService {
     return prefs.getString(tokenKey);
   }
 
-  // Check if user is logged in
+  // Get token expiry
+  Future<int?> getTokenExpiry() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(tokenExpiryKey);
+  }
+
+  // Check if user is logged in and token is valid
   Future<bool> isLoggedIn() async {
     final token = await getToken();
+    final expiry = await getTokenExpiry();
+
+    if (token == null) return false;
+
+    // Check if token has expired
+    if (expiry != null) {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      return expiry > now;
+    }
+
     return token != null;
   }
 

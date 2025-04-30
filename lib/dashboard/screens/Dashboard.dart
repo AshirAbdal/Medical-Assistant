@@ -340,25 +340,7 @@ class _DashboardState extends State<Dashboard> {
         ],
       ),
       // Bottom navigation bar with placeholder icons
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: Colors.green,
-        unselectedItemColor: Colors.grey,
-        currentIndex: 1, // Set the middle icon as selected
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.call),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.message),
-            label: '',
-          ),
-        ],
-      ),
+
       // Floating action button
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green,

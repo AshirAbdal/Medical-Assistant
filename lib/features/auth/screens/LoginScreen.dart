@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../dashboard/screens/Dashboard.dart';
-import '../../../services/auth_service.dart'; // Import the auth service
-import '../../../services/storage_service.dart'; // Import the storage service
+import '../../../services/auth_service.dart';
+import '../../../services/storage_service.dart';
 
 class Loginscreen extends StatefulWidget {
   const Loginscreen({super.key});
@@ -15,9 +15,9 @@ class _LoginscreenState extends State<Loginscreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  final AuthService _authService = AuthService(); // Initialize auth service
-  final StorageService _storageService = StorageService(); // Initialize storage service
-  bool _isLoading = false; // Add loading state
+  final AuthService _authService = AuthService();
+  final StorageService _storageService = StorageService();
+  bool _isLoading = false;
 
   // Add state for password visibility
   bool _obscurePassword = true;
@@ -56,10 +56,25 @@ class _LoginscreenState extends State<Loginscreen> {
           // Save user data and token
           if (response['user'] != null) {
             await _storageService.saveUserData(response['user']);
+
+            // Print doctor information to console
+            print('Doctor Name: ${response['user']['name']}');
+            print('Doctor ID: ${response['user']['id']}');
+            print('Doctor Role: ${response['user']['role']}');
           }
 
+          // Save and log token information
           if (response['token'] != null) {
             await _storageService.saveToken(response['token']);
+            print('Token: ${response['token']}');
+          }
+
+          // Save and log token expiry if exists
+          if (response['expires_at'] != null) {
+            await _storageService.saveTokenExpiry(response['expires_at']);
+            final expiryTime = DateTime.fromMillisecondsSinceEpoch(
+                response['expires_at'] * 1000);
+            print('Token expires at: $expiryTime');
           }
 
           // Handle successful login
