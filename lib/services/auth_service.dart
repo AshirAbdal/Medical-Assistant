@@ -26,14 +26,13 @@ class AuthService {
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
-      print('Attempting login to: $baseUrl/login_api.php');
+      print('Attempting login to: $baseUrl/login');
       print('With credentials - Email: $email, Password: $password');
 
       final response = await http.post(
-        Uri.parse('$baseUrl/login_api.php'),
+        Uri.parse('$baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'action': 'login',
           'email': email,
           'password': password,
         }),
@@ -50,7 +49,7 @@ class AuthService {
       } else {
         return {
           'success': false,
-          'message': responseData['message'] ?? 'An error occurred'
+          'message': responseData['message'] ?? responseData['error'] ?? 'An error occurred'
         };
       }
     } catch (e) {
@@ -84,7 +83,7 @@ class AuthService {
   // Method to check if token is valid and not expired
   Future<bool> isTokenValid() async {
     try {
-      final response = await authenticatedRequest('validate_token.php');
+      final response = await authenticatedRequest('validate_token');
       final responseData = jsonDecode(response.body);
       return responseData['success'] ?? false;
     } catch (e) {
@@ -96,7 +95,7 @@ class AuthService {
   Future<bool> logout() async {
     try {
       // Call logout API if your backend supports it
-      await authenticatedRequest('logout.php');
+      await authenticatedRequest('logout');
 
       // Clear stored data
       await _storageService.clearAll();
