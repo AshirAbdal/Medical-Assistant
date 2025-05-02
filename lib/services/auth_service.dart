@@ -26,11 +26,11 @@ class AuthService {
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
-      print('Attempting login to: $baseUrl/login');
+      print('Attempting login to: $baseUrl/api.php?url=login');
       print('With credentials - Email: $email, Password: $password');
 
       final response = await http.post(
-        Uri.parse('$baseUrl/login'),
+        Uri.parse('$baseUrl/api.php?url=login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
@@ -71,7 +71,7 @@ class AuthService {
     }
 
     return http.post(
-        Uri.parse('$baseUrl/$endpoint'),
+        Uri.parse('$baseUrl/api.php?url=$endpoint'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token'
