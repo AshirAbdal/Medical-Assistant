@@ -1,11 +1,16 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class StorageService {
   // Keys for storing authentication data
   static const String userKey = 'user_data';
   static const String tokenKey = 'auth_token';
+  static const String refreshTokenKey = 'refresh_token';
   static const String tokenExpiryKey = 'token_expiry';
+
+  // Use secure storage for sensitive information
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   // Save user data to local storage
   Future<bool> saveUserData(Map<String, dynamic> userData) async {
@@ -13,10 +18,14 @@ class StorageService {
     return prefs.setString(userKey, jsonEncode(userData));
   }
 
-  // Save auth token
-  Future<bool> saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.setString(tokenKey, token);
+  // Save auth token securely
+  Future<void> saveToken(String token) async {
+    await _secureStorage.write(key: tokenKey, value: token);
+  }
+
+  // Save refresh token securely
+  Future<void> saveRefreshToken(String token) async {
+    await _secureStorage.write(key: refreshTokenKey, value: token);
   }
 
   // Save token expiry timestamp
@@ -37,10 +46,14 @@ class StorageService {
     return null;
   }
 
-  // Get token
+  // Get token securely
   Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(tokenKey);
+    return await _secureStorage.read(key: tokenKey);
+  }
+
+  // Get refresh token securely
+  Future<String?> getRefreshToken() async {
+    return await _secureStorage.read(key: refreshTokenKey);
   }
 
   // Get token expiry
@@ -67,7 +80,14 @@ class StorageService {
 
   // Clear all data (for logout)
   Future<bool> clearAll() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.clear();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      await _secureStorage.deleteAll();
+      return true;
+    } catch (e) {
+      print('Error clearing storage: ${e.toString()}');
+      return false;
+    }
   }
 }

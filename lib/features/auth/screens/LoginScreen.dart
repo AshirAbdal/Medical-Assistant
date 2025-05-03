@@ -18,12 +18,7 @@ class _LoginscreenState extends State<Loginscreen> {
   final AuthService _authService = AuthService();
   final StorageService _storageService = StorageService();
   bool _isLoading = false;
-
-  // Add state for password visibility
   bool _obscurePassword = true;
-
-  bool _emailError = false;
-  bool _passwordError = false;
 
   @override
   void dispose() {
@@ -32,14 +27,35 @@ class _LoginscreenState extends State<Loginscreen> {
     super.dispose();
   }
 
-  Future<void> _validateAndSubmit() async {
-    setState(() {
-      _emailError = emailController.text.isEmpty;
-      _passwordError = passwordController.text.isEmpty;
-      _isLoading = true;
-    });
+  // Enhanced validation
+  String? validateEmail(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Email is required';
+    }
+    // Email format validation
+    final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegExp.hasMatch(value)) {
+      return 'Enter a valid email address';
+    }
+    return null;
+  }
 
-    if (!_emailError && !_passwordError) {
+  String? validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Password is required';
+    }
+    if (value.length < 8) {
+      return 'Password must be at least 8 characters';
+    }
+    return null;
+  }
+
+  Future<void> _validateAndSubmit() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
+
       try {
         // Call the API through the auth service
         final response = await _authService.login(
@@ -53,30 +69,6 @@ class _LoginscreenState extends State<Loginscreen> {
         });
 
         if (response['success']) {
-          // Save user data and token
-          if (response['user'] != null) {
-            await _storageService.saveUserData(response['user']);
-
-            // Print doctor information to console
-            print('Doctor Name: ${response['user']['name']}');
-            print('Doctor ID: ${response['user']['id']}');
-            print('Doctor Role: ${response['user']['role']}');
-          }
-
-          // Save and log token information
-          if (response['token'] != null) {
-            await _storageService.saveToken(response['token']);
-            print('Token: ${response['token']}');
-          }
-
-          // Save and log token expiry if exists
-          if (response['expires_at'] != null) {
-            await _storageService.saveTokenExpiry(response['expires_at']);
-            final expiryTime = DateTime.fromMillisecondsSinceEpoch(
-                response['expires_at'] * 1000);
-            print('Token expires at: $expiryTime');
-          }
-
           // Handle successful login
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -112,10 +104,6 @@ class _LoginscreenState extends State<Loginscreen> {
           ),
         );
       }
-    } else {
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
 
@@ -148,7 +136,7 @@ class _LoginscreenState extends State<Loginscreen> {
                         child: Container(
                           width: 30,
                           height: 30,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: Colors.orange,
                             shape: BoxShape.circle,
                           ),
@@ -158,7 +146,7 @@ class _LoginscreenState extends State<Loginscreen> {
                   ),
                 ),
 
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
 
                 // White card containing login form
                 Container(
@@ -176,169 +164,114 @@ class _LoginscreenState extends State<Loginscreen> {
                       ),
                     ],
                   ),
-                  child: Column(
-                    children: [
-                      const Text(
-                        "Login",
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF444444),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        const Text(
+                          "Login",
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF444444),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
-                      // Email field
-                      TextField(
-                        controller: emailController,
-                        decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-                          labelText: 'Email *',
-                          labelStyle: TextStyle(color: Colors.grey[700]),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(5),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(5),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(5),
-                            borderSide: BorderSide(color: _emailError ? Colors.red : Colors.grey[500]!),
-                          ),
-                          suffixIcon: _emailError
-                              ? Padding(
-                            padding: const EdgeInsets.only(right: 15),
-                            child: Icon(
-                              Icons.error,
-                              color: Colors.red[700],
-                              size: 20,
+                        // Email field with validation
+                        TextFormField(
+                          controller: emailController,
+                          validator: validateEmail,
+                          keyboardType: TextInputType.emailAddress,
+                          autocorrect: false,
+                          decoration: InputDecoration(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                            labelText: 'Email *',
+                            labelStyle: TextStyle(color: Colors.grey[700]),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(5),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
                             ),
-                          )
-                              : null,
-                        ),
-                        onChanged: (_) {
-                          if (_emailError) setState(() => _emailError = false);
-                        },
-                      ),
-
-                      if (_emailError)
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 12, top: 5),
-                            child: Text(
-                              'Email is required',
-                              style: TextStyle(color: Colors.red[700], fontSize: 12),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(5),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(5),
+                              borderSide: BorderSide(color: Colors.grey[500]!),
                             ),
                           ),
                         ),
 
-                      const SizedBox(height: 15),
+                        const SizedBox(height: 15),
 
-                      // Password field with eye icon
-                      TextField(
-                        controller: passwordController,
-                        obscureText: _obscurePassword, // Use the state variable here
-                        decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-                          labelText: 'Password *',
-                          labelStyle: TextStyle(color: Colors.grey[700]),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(5),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(5),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(5),
-                            borderSide: BorderSide(color: _passwordError ? Colors.red : Colors.grey[500]!),
-                          ),
-                          // Add toggle eye icon
-                          suffixIcon: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Eye icon for password visibility
-                              IconButton(
-                                icon: Icon(
-                                  // Change the icon based on the state
-                                  _obscurePassword
-                                      ? Icons.visibility_off
-                                      : Icons.visibility,
-                                  color: Colors.grey[600],
-                                  size: 22,
-                                ),
-                                onPressed: () {
-                                  // Toggle password visibility
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
-                                },
+                        // Password field with validation and visibility toggle
+                        TextFormField(
+                          controller: passwordController,
+                          validator: validatePassword,
+                          obscureText: _obscurePassword,
+                          decoration: InputDecoration(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                            labelText: 'Password *',
+                            labelStyle: TextStyle(color: Colors.grey[700]),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(5),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(5),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(5),
+                              borderSide: BorderSide(color: Colors.grey[500]!),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                color: Colors.grey[600],
                               ),
-                              // Error icon if needed
-                              if (_passwordError)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 15),
-                                  child: Icon(
-                                    Icons.error,
-                                    color: Colors.red[700],
-                                    size: 20,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        onChanged: (_) {
-                          if (_passwordError) setState(() => _passwordError = false);
-                        },
-                      ),
-
-                      if (_passwordError)
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 12, top: 5),
-                            child: Text(
-                              'Password is required',
-                              style: TextStyle(color: Colors.red[700], fontSize: 12),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
                             ),
                           ),
                         ),
 
-                      const SizedBox(height: 25),
+                        const SizedBox(height: 25),
 
-                      // Sign in button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4caf50), // Green color
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25),
+                        // Sign in button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF4caf50), // Green color
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              elevation: 0,
                             ),
-                            elevation: 0,
-                          ),
-                          onPressed: _isLoading ? null : _validateAndSubmit,
-                          child: _isLoading
-                              ? const CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          )
-                              : const Text(
-                            'Sign in',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
+                            onPressed: _isLoading ? null : _validateAndSubmit,
+                            child: _isLoading
+                                ? const CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            )
+                                : const Text(
+                              'Sign in',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
 
