@@ -106,7 +106,7 @@ class AuthService {
       }
 
       final response = await http.get(
-        Uri.parse('$baseUrl/api.php?url=csrf_token'),
+        Uri.parse('$baseUrl/csrf_token'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -177,11 +177,11 @@ class AuthService {
         };
       }
 
-      print('Attempting login to: $baseUrl/api.php?url=login');
+      print('Attempting login to: $baseUrl/login');
 
-      // Make login request
+      // Make login request with clean URL
       final response = await http.post(
-        Uri.parse('$baseUrl/api.php?url=login'),
+        Uri.parse('$baseUrl/login'),
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-TOKEN': _csrfToken ?? ''
@@ -281,8 +281,9 @@ class AuthService {
       final refreshToken = await _storageService.getRefreshToken();
       if (refreshToken == null) return null;
 
+      // Use clean URL
       final response = await http.post(
-        Uri.parse('$baseUrl/api.php?url=refresh_token'),
+        Uri.parse('$baseUrl/refresh_token'),
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-TOKEN': _csrfToken ?? ''
@@ -340,10 +341,10 @@ class AuthService {
       requestBody['csrf_token'] = _csrfToken;
     }
 
-    // Make authenticated request
+    // Make authenticated request with clean URL
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api.php?url=$endpoint'),
+        Uri.parse('$baseUrl/$endpoint'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -358,7 +359,7 @@ class AuthService {
         final newToken = await refreshToken();
         if (newToken != null) {
           return await http.post(
-            Uri.parse('$baseUrl/api.php?url=$endpoint'),
+            Uri.parse('$baseUrl/$endpoint'),
             headers: {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $newToken',
