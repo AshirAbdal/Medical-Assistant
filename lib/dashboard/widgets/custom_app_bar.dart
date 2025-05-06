@@ -21,7 +21,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
   bool _showSearchBar = false;
   final TextEditingController _searchController = TextEditingController();
   final StorageService _storageService = StorageService();
-  final GlobalKey _menuKey = GlobalKey();
 
   @override
   void dispose() {
@@ -47,14 +46,11 @@ class _CustomAppBarState extends State<CustomAppBar> {
   }
 
   void _showModernMenu() {
-    final RenderBox renderBox = _menuKey.currentContext?.findRenderObject() as RenderBox;
-    final Offset position = renderBox.localToGlobal(Offset.zero);
-
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
       barrierLabel: '',
-      barrierColor: Colors.transparent,
+      barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 200),
       pageBuilder: (context, animation, secondaryAnimation) {
         return Stack(
@@ -66,8 +62,8 @@ class _CustomAppBarState extends State<CustomAppBar> {
               ),
             ),
             Positioned(
-              top: position.dy + renderBox.size.height + 8,
-              right: MediaQuery.of(context).size.width - position.dx - renderBox.size.width,
+              top: kToolbarHeight + MediaQuery.of(context).padding.top + 8,
+              right: 16,
               child: ScaleTransition(
                 scale: CurvedAnimation(
                   parent: animation,
@@ -77,7 +73,11 @@ class _CustomAppBarState extends State<CustomAppBar> {
                   elevation: 4,
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
-                    width: 240,
+                    width: 340,
+                    height: 850,
+                    constraints: BoxConstraints( // Added height constraint
+                      maxHeight: MediaQuery.of(context).size.height * 0.6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -89,41 +89,49 @@ class _CustomAppBarState extends State<CustomAppBar> {
                         ),
                       ],
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildMenuItem(
-                          icon: Icons.receipt_outlined,
-                          label: 'Billing',
-                          onTap: () => Navigator.pop(context),
+                    child: SingleChildScrollView( // Added for scrollability
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildMenuItem(
+                              icon: Icons.receipt_outlined,
+                              label: 'Billing',
+                              onTap: () => Navigator.pop(context),
+                            ),
+                            _buildMenuItem(
+                              icon: Icons.settings_outlined,
+                              label: 'Settings',
+                              onTap: () => Navigator.pop(context),
+                            ),
+                            _buildMenuItem(
+                              icon: Icons.info_outline,
+                              label: 'About',
+                              onTap: () => Navigator.pop(context),
+                            ),
+                            _buildMenuItem(
+                              icon: Icons.help_outline,
+                              label: 'Help',
+                              onTap: () => Navigator.pop(context),
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16),
+                              child: Divider(height: 24, thickness: 1),
+                            ),
+                            _buildMenuItem(
+                              icon: Icons.logout,
+                              label: 'Logout',
+                              iconColor: Colors.red,
+                              textColor: Colors.red,
+                              onTap: () {
+                                Navigator.pop(context);
+                                _logout();
+                              },
+                            ),
+                          ],
                         ),
-                        _buildMenuItem(
-                          icon: Icons.settings_outlined,
-                          label: 'Settings',
-                          onTap: () => Navigator.pop(context),
-                        ),
-                        _buildMenuItem(
-                          icon: Icons.info_outline,
-                          label: 'About',
-                          onTap: () => Navigator.pop(context),
-                        ),
-                        _buildMenuItem(
-                          icon: Icons.help_outline,
-                          label: 'Help',
-                          onTap: () => Navigator.pop(context),
-                        ),
-                        const Divider(height: 1, thickness: 1),
-                        _buildMenuItem(
-                          icon: Icons.logout,
-                          label: 'Logout',
-                          iconColor: Colors.red,
-                          textColor: Colors.red,
-                          onTap: () {
-                            Navigator.pop(context);
-                            _logout();
-                          },
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -227,7 +235,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
           },
         ),
         IconButton(
-          key: _menuKey,
           icon: const Icon(Icons.more_vert, color: Colors.white),
           onPressed: _showModernMenu,
         ),
