@@ -58,6 +58,120 @@ class _CustomAppBarState extends State<CustomAppBar> {
     }
   }
 
+  void _showModernBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle indicator
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              // Menu items
+              _buildMenuTile(
+                icon: Icons.receipt_outlined,
+                title: 'Billing',
+                onTap: () {
+                  Navigator.pop(context);
+                  // Navigate to billing page
+                },
+              ),
+
+              _buildMenuTile(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                onTap: () {
+                  Navigator.pop(context);
+                  // Navigate to settings page
+                },
+              ),
+
+              _buildMenuTile(
+                icon: Icons.info_outline,
+                title: 'About',
+                onTap: () {
+                  Navigator.pop(context);
+                  // Show about dialog
+                },
+              ),
+
+              _buildMenuTile(
+                icon: Icons.help_outline,
+                title: 'Help',
+                onTap: () {
+                  Navigator.pop(context);
+                  // Navigate to help page
+                },
+              ),
+
+              const Divider(height: 10, thickness: 1),
+
+              _buildMenuTile(
+                icon: Icons.logout_rounded,
+                title: 'Logout',
+                textColor: Colors.red,
+                iconColor: Colors.red,
+                onTap: () {
+                  Navigator.pop(context);
+                  _logout();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMenuTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Color? textColor,
+    Color? iconColor,
+  }) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: (iconColor ?? const Color(0xFF4caf50)).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(
+          icon,
+          color: iconColor ?? const Color(0xFF4caf50),
+        ),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: FontWeight.w500,
+          color: textColor ?? Colors.black87,
+        ),
+      ),
+      onTap: onTap,
+      trailing: Icon(
+        Icons.arrow_forward_ios,
+        size: 16,
+        color: Colors.grey[400],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppBar(
@@ -110,51 +224,10 @@ class _CustomAppBarState extends State<CustomAppBar> {
             });
           },
         ),
-        // 3-dot menu
-        PopupMenuButton<String>(
+        // Modern 3-dot menu
+        IconButton(
           icon: const Icon(Icons.more_vert, color: Colors.white),
-          onSelected: (value) {
-            // Handle menu item selection
-            switch (value) {
-              case 'billing':
-              // Navigate to billing page
-                break;
-              case 'settings':
-              // Navigate to settings page
-                break;
-              case 'about':
-              // Show about dialog
-                break;
-              case 'help':
-              // Navigate to help page
-                break;
-              case 'logout':
-                _logout();
-                break;
-            }
-          },
-          itemBuilder: (BuildContext context) => [
-            const PopupMenuItem<String>(
-              value: 'billing',
-              child: Text('Billing'),
-            ),
-            const PopupMenuItem<String>(
-              value: 'settings',
-              child: Text('Settings'),
-            ),
-            const PopupMenuItem<String>(
-              value: 'about',
-              child: Text('About'),
-            ),
-            const PopupMenuItem<String>(
-              value: 'help',
-              child: Text('Help'),
-            ),
-            const PopupMenuItem<String>(
-              value: 'logout',
-              child: Text('Logout'),
-            ),
-          ],
+          onPressed: _showModernBottomSheet,
         ),
         const SizedBox(width: 8),
       ],
