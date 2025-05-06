@@ -35,7 +35,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.1.0  # Added HTTP package for API requests
   dio: ^5.4.0  # Add Dio for better HTTP options
-
+  intl: ^0.18.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
