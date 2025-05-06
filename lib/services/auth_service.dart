@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
-import 'package:dio/dio.dart';
 import '../services/storage_service.dart';
 
-// Rate limiter implementation
+// Rate limiter implementation (keeping this as it's still useful)
 class ApiRateLimiter {
   final Map<String, DateTime> _lastRequestTimes = {};
   final Map<String, int> _requestCounts = {};
@@ -57,7 +56,6 @@ class AuthService {
   late String baseUrl;
   final StorageService _storageService = StorageService();
   final ApiRateLimiter _rateLimiter = ApiRateLimiter();
-  final Dio _dio = Dio();
   final bool _isDevEnvironment = true; // Set to false for production
 
   // Login rate limiting
@@ -65,9 +63,6 @@ class AuthService {
   DateTime? _loginLockoutUntil;
   final int _maxLoginAttempts = 5;
   final int _lockoutDurationSeconds = 300; // 5 minutes
-
-  // CSRF Protection
-  String? _csrfToken;
 
   AuthService() {
     // For development, use HTTP. For production, use HTTPS
@@ -86,45 +81,9 @@ class AuthService {
 
     // If testing on physical device, uncomment and use your computer's IP
     // baseUrl = '$protocol://192.168.1.100/my_patients_api';
-
-    // Initialize CSRF protection
-    initCsrfProtection();
   }
 
-  // Initialize CSRF protection
-  Future<void> initCsrfProtection() async {
-    _csrfToken = await getCsrfToken();
-  }
-
-  // Get CSRF token from server
-  Future<String?> getCsrfToken() async {
-    try {
-      // In development, we might not have a CSRF endpoint yet, so return a dummy token
-      if (_isDevEnvironment) {
-        // For development, use a fixed token (remove in production!)
-        return 'dev_csrf_token';
-      }
-
-      final response = await http.get(
-        Uri.parse('$baseUrl/csrf_token'),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        if (responseData['csrf_token'] != null) {
-          return responseData['csrf_token'];
-        }
-      }
-
-      return null;
-    } catch (e) {
-      print('CSRF token error: ${e.toString()}');
-      return null;
-    }
-  }
-
-  // Enhanced login with input validation, rate limiting, and HTTPS
+  // Enhanced login with input validation and rate limiting
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       // Check if currently locked out
@@ -184,12 +143,10 @@ class AuthService {
         Uri.parse('$baseUrl/login'),
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': _csrfToken ?? ''
         },
         body: jsonEncode({
           'email': sanitizedEmail,
           'password': password,
-          'csrf_token': _csrfToken
         }),
       );
 
@@ -202,24 +159,14 @@ class AuthService {
         // Reset login attempts on success
         _loginAttempts = 0;
 
-        // Save user data and token
+        // Save user data
         if (responseData['user'] != null) {
           await _storageService.saveUserData(responseData['user']);
         }
 
-        // Save token information
-        if (responseData['token'] != null) {
-          await _storageService.saveToken(responseData['token']);
-        }
-
-        // Save refresh token if present
-        if (responseData['refresh_token'] != null) {
-          await _storageService.saveRefreshToken(responseData['refresh_token']);
-        }
-
-        // Save token expiry if exists
-        if (responseData['expires_at'] != null) {
-          await _storageService.saveTokenExpiry(responseData['expires_at']);
+        // Save PHP session ID
+        if (responseData['sid'] != null) {
+          await _storageService.saveSessionId(responseData['sid']);
         }
 
         return responseData;
@@ -238,7 +185,7 @@ class AuthService {
 
         return {
           'success': false,
-          'message': responseData['message'] ?? responseData['error'] ?? 'An error occurred'
+          'message': responseData['message'] ?? 'An error occurred'
         };
       }
     } catch (e) {
@@ -251,149 +198,87 @@ class AuthService {
     }
   }
 
-  // Token refresh mechanism
-  Future<String?> getValidToken() async {
-    final token = await _storageService.getToken();
-    final expiry = await _storageService.getTokenExpiry();
-
-    if (token == null) return null;
-
-    // Check if token is about to expire (within 5 minutes)
-    if (expiry != null) {
-      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      if (expiry - now < 300) { // 300 seconds = 5 minutes
-        // Token is about to expire, refresh it
-        return refreshToken();
-      }
-    }
-
-    return token;
-  }
-
-  Future<String?> refreshToken() async {
+  // Validate session with the server
+  Future<bool> validateSession() async {
     try {
-      if (!_rateLimiter.canMakeRequest('refresh_token')) {
-        final waitTime = _rateLimiter.timeUntilReset('refresh_token');
-        print('Token refresh rate limited. Try again in $waitTime seconds.');
-        return null;
-      }
+      final sessionId = await _storageService.getSessionId();
 
-      final refreshToken = await _storageService.getRefreshToken();
-      if (refreshToken == null) return null;
+      if (sessionId == null) return false;
 
-      // Use clean URL
-      final response = await http.post(
-        Uri.parse('$baseUrl/refresh_token'),
+      final response = await http.get(
+        Uri.parse('$baseUrl/validate_session'),
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': _csrfToken ?? ''
+          'X-Session-ID': sessionId
         },
-        body: jsonEncode({
-          'refresh_token': refreshToken,
-          'csrf_token': _csrfToken
-        }),
       );
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        if (responseData['success']) {
-          // Save new tokens
-          await _storageService.saveToken(responseData['token']);
-          if (responseData['refresh_token'] != null) {
-            await _storageService.saveRefreshToken(responseData['refresh_token']);
-          }
-          if (responseData['expires_at'] != null) {
-            await _storageService.saveTokenExpiry(responseData['expires_at']);
-          }
-
-          return responseData['token'];
-        }
+        return responseData['success'] ?? false;
       }
 
-      return null;
+      return false;
     } catch (e) {
-      print('Token refresh error: ${e.toString()}');
-      return null;
+      print('Session validation error: ${e.toString()}');
+      return false;
     }
   }
 
-  // Enhanced authenticated request with CSRF, rate limiting, and token refresh
-  Future<http.Response> authenticatedRequest(String endpoint, {Map<String, dynamic>? body}) async {
-    // Check rate limiter
-    if (!_rateLimiter.canMakeRequest(endpoint)) {
-      final waitTime = _rateLimiter.timeUntilReset(endpoint);
-      throw Exception('Rate limit exceeded. Please try again in $waitTime seconds.');
-    }
-
-    // Get valid token (refreshes if needed)
-    final token = await getValidToken();
-
-    if (token == null) {
-      throw Exception('Not authenticated');
-    }
-
-    // Create request body with CSRF token
-    final Map<String, dynamic> requestBody = {};
-    if (body != null) {
-      requestBody.addAll(body);
-    }
-    if (_csrfToken != null) {
-      requestBody['csrf_token'] = _csrfToken;
-    }
-
-    // Make authenticated request with clean URL
+  // Fetch patients data
+  Future<Map<String, dynamic>> getPatients() async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/$endpoint'),
+      final sessionId = await _storageService.getSessionId();
+
+      if (sessionId == null) {
+        return {
+          'success': false,
+          'message': 'Not authenticated'
+        };
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/patients'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-          'X-CSRF-TOKEN': _csrfToken ?? ''
+          'X-Session-ID': sessionId
         },
-        body: jsonEncode(requestBody),
       );
 
-      // Check if token expired (401 status)
-      if (response.statusCode == 401) {
-        // Try to refresh token and retry request once
-        final newToken = await refreshToken();
-        if (newToken != null) {
-          return await http.post(
-            Uri.parse('$baseUrl/$endpoint'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $newToken',
-              'X-CSRF-TOKEN': _csrfToken ?? ''
-            },
-            body: jsonEncode(requestBody),
-          );
-        }
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to fetch patients'
+        };
       }
-
-      return response;
     } catch (e) {
-      rethrow;
-    }
-  }
-
-  // Check if token is valid and not expired
-  Future<bool> isTokenValid() async {
-    try {
-      final response = await authenticatedRequest('validate_token');
-      final responseData = jsonDecode(response.body);
-      return responseData['success'] ?? false;
-    } catch (e) {
-      return false;
+      print('Get patients error: ${e.toString()}');
+      return {
+        'success': false,
+        'message': 'Network error: ${e.toString()}'
+      };
     }
   }
 
   // Log out user
   Future<bool> logout() async {
     try {
-      // Call logout API if your backend supports it
-      await authenticatedRequest('logout');
+      final sessionId = await _storageService.getSessionId();
 
-      // Clear stored data
+      if (sessionId != null) {
+        // Call logout API with session ID
+        await http.post(
+          Uri.parse('$baseUrl/logout'),
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Session-ID': sessionId
+          },
+        );
+      }
+
+      // Clear stored data regardless of API call success
       await _storageService.clearAll();
       return true;
     } catch (e) {

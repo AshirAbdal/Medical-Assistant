@@ -3,11 +3,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class StorageService {
-  // Keys for storing authentication data
+  // Keys for storing data
   static const String userKey = 'user_data';
-  static const String tokenKey = 'auth_token';
-  static const String refreshTokenKey = 'refresh_token';
-  static const String tokenExpiryKey = 'token_expiry';
+  static const String sessionIdKey = 'session_id'; // New key for PHP session ID
 
   // Use secure storage for sensitive information
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
@@ -18,20 +16,9 @@ class StorageService {
     return prefs.setString(userKey, jsonEncode(userData));
   }
 
-  // Save auth token securely
-  Future<void> saveToken(String token) async {
-    await _secureStorage.write(key: tokenKey, value: token);
-  }
-
-  // Save refresh token securely
-  Future<void> saveRefreshToken(String token) async {
-    await _secureStorage.write(key: refreshTokenKey, value: token);
-  }
-
-  // Save token expiry timestamp
-  Future<bool> saveTokenExpiry(int expiryTimestamp) async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.setInt(tokenExpiryKey, expiryTimestamp);
+  // Save PHP session ID securely
+  Future<void> saveSessionId(String sessionId) async {
+    await _secureStorage.write(key: sessionIdKey, value: sessionId);
   }
 
   // Get user data
@@ -46,36 +33,15 @@ class StorageService {
     return null;
   }
 
-  // Get token securely
-  Future<String?> getToken() async {
-    return await _secureStorage.read(key: tokenKey);
+  // Get session ID securely
+  Future<String?> getSessionId() async {
+    return await _secureStorage.read(key: sessionIdKey);
   }
 
-  // Get refresh token securely
-  Future<String?> getRefreshToken() async {
-    return await _secureStorage.read(key: refreshTokenKey);
-  }
-
-  // Get token expiry
-  Future<int?> getTokenExpiry() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(tokenExpiryKey);
-  }
-
-  // Check if user is logged in and token is valid
+  // Check if user is logged in
   Future<bool> isLoggedIn() async {
-    final token = await getToken();
-    final expiry = await getTokenExpiry();
-
-    if (token == null) return false;
-
-    // Check if token has expired
-    if (expiry != null) {
-      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      return expiry > now;
-    }
-
-    return token != null;
+    final sessionId = await getSessionId();
+    return sessionId != null;
   }
 
   // Clear all data (for logout)
