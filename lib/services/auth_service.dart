@@ -1,9 +1,11 @@
+// lib/services/auth_service.dart
 import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import '../services/storage_service.dart';
+import '../models/category.dart';
 
-// Rate limiter implementation (keeping this as it's still useful)
+// Rate limiter implementation
 class ApiRateLimiter {
   final Map<String, DateTime> _lastRequestTimes = {};
   final Map<String, int> _requestCounts = {};
@@ -161,22 +163,54 @@ class AuthService {
 
         // Save user data
         if (responseData['user'] != null) {
+          print('Saving user data: ${responseData['user']}');
           await _storageService.saveUserData(responseData['user']);
+
+          // Save categories data if available
+          if (responseData['user']['categories'] != null) {
+            print('Saving user categories: ${responseData['user']['categories']}');
+            List<dynamic> categories = responseData['user']['categories'];
+            await _storageService.saveCategories(categories);
+          } else {
+            print('Warning: No categories found in user data');
+          }
+        } else {
+          print('Warning: No user data found in response');
         }
 
-        // Save PHP session ID
+        // Save PHP session ID with enhanced debugging
         if (responseData['sid'] != null) {
+          print('Saving PHP session ID: ${responseData['sid']}');
           await _storageService.saveSessionId(responseData['sid']);
+
+          // Verify the session was saved correctly
+          final savedSid = await _storageService.getSessionId();
+          print('Verification - Retrieved session ID: $savedSid');
+
+          if (savedSid != responseData['sid']) {
+            print('WARNING: Session ID mismatch after saving!');
+          }
+        } else {
+          print('ERROR: No session ID (sid) found in login response!');
         }
 
-        return responseData;
+        // Return the success response with extra confirmation
+        return {
+          'success': true,
+          'message': 'Login successful',
+          'user': responseData['user'],
+          'sid': responseData['sid'],
+          'sid_verified': await _storageService.getSessionId() == responseData['sid']
+        };
       } else {
         // Increment failed login attempts
         _loginAttempts++;
+        print('Login failed. Attempt #$_loginAttempts of $_maxLoginAttempts');
 
         // Apply lockout if max attempts reached
         if (_loginAttempts >= _maxLoginAttempts) {
           _loginLockoutUntil = DateTime.now().add(Duration(seconds: _lockoutDurationSeconds));
+          print('Account locked for $_lockoutDurationSeconds seconds due to too many failed attempts');
           return {
             'success': false,
             'message': 'Too many failed login attempts. Please try again in $_lockoutDurationSeconds seconds.'
@@ -215,6 +249,18 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
+
+        // Save updated user data if available
+        if (responseData['success'] && responseData['user'] != null) {
+          await _storageService.saveUserData(responseData['user']);
+
+          // Save categories data if available
+          if (responseData['user']['categories'] != null) {
+            List<dynamic> categories = responseData['user']['categories'];
+            await _storageService.saveCategories(categories);
+          }
+        }
+
         return responseData['success'] ?? false;
       }
 
@@ -226,7 +272,7 @@ class AuthService {
   }
 
   // Fetch patients data
-  Future<Map<String, dynamic>> getPatients() async {
+  Future<Map<String, dynamic>> getPatients({int? categoryId}) async {
     try {
       final sessionId = await _storageService.getSessionId();
 
@@ -237,8 +283,14 @@ class AuthService {
         };
       }
 
+      // Add categoryId as query parameter if provided
+      String url = '$baseUrl/patients';
+      if (categoryId != null) {
+        url += '?category_id=$categoryId';
+      }
+
       final response = await http.get(
-        Uri.parse('$baseUrl/patients'),
+        Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
           'X-Session-ID': sessionId
@@ -255,6 +307,43 @@ class AuthService {
       }
     } catch (e) {
       print('Get patients error: ${e.toString()}');
+      return {
+        'success': false,
+        'message': 'Network error: ${e.toString()}'
+      };
+    }
+  }
+
+  // Get all categories
+  Future<Map<String, dynamic>> getCategories() async {
+    try {
+      final sessionId = await _storageService.getSessionId();
+
+      if (sessionId == null) {
+        return {
+          'success': false,
+          'message': 'Not authenticated'
+        };
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/categories'),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-ID': sessionId
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to fetch categories'
+        };
+      }
+    } catch (e) {
+      print('Get categories error: ${e.toString()}');
       return {
         'success': false,
         'message': 'Network error: ${e.toString()}'
