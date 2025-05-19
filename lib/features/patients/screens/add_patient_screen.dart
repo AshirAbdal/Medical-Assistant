@@ -25,9 +25,8 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   bool _isLoading = true;
   String? _error;
 
-  final PatientService _patientService = PatientService(
-    baseUrl: 'http://localhost/my_patients_api', // Update with your API URL
-  );
+  // Updated constructor without parameters
+  final PatientService _patientService = PatientService();
 
   @override
   void initState() {

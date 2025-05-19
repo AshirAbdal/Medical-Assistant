@@ -1,15 +1,34 @@
 // lib/services/patient_service.dart
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import '../services/storage_service.dart';
 import '../models/patient.dart';
 import '../models/category.dart';
 
 class PatientService {
-  final String baseUrl;
+  late String baseUrl;
   final StorageService _storageService = StorageService();
+  final bool _isDevEnvironment = true; // Set to false for production
 
-  PatientService({required this.baseUrl});
+  PatientService() {
+    // For development, use HTTP. For production, use HTTPS
+    final String protocol = _isDevEnvironment ? 'http' : 'https';
+
+    if (Platform.isAndroid) {
+      // For Android emulator, use 10.0.2.2 which maps to localhost on host
+      baseUrl = '$protocol://10.0.2.2/my_patients_api';
+    } else if (Platform.isIOS) {
+      // For iOS simulator, use localhost
+      baseUrl = '$protocol://localhost/my_patients_api';
+    } else {
+      // Default fallback
+      baseUrl = '$protocol://localhost/my_patients_api';
+    }
+
+    // If testing on physical device, uncomment and use your computer's IP
+    // baseUrl = '$protocol://192.168.1.100/my_patients_api';
+  }
 
   Future<List<Patient>> getMyPatients({int? categoryId}) async {
     try {

@@ -30,9 +30,8 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
   late TextEditingController notesController;
   String? selectedGender;
 
-  final PatientService _patientService = PatientService(
-    baseUrl: 'http://localhost/my_patients_api', // Update with your API URL
-  );
+  // Updated constructor without parameters
+  final PatientService _patientService = PatientService();
 
   @override
   void initState() {
@@ -66,7 +65,7 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
         // Set selected category if patient has one
         if (patient.categoryId != null) {
           selectedCategory = categories.firstWhere(
-                (category) => category.id == patient.categoryId,
+            (category) => category.id == patient.categoryId,
             orElse: () => categories.first,
           );
         }
@@ -92,12 +91,19 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
 
         final updatedData = {
           'name': nameController.text,
-          'age': ageController.text.isNotEmpty ? int.parse(ageController.text) : null,
+          'age':
+              ageController.text.isNotEmpty
+                  ? int.parse(ageController.text)
+                  : null,
           'gender': selectedGender,
-          'email': emailController.text.isNotEmpty ? emailController.text : null,
-          'phone': phoneController.text.isNotEmpty ? phoneController.text : null,
-          'address': addressController.text.isNotEmpty ? addressController.text : null,
-          'notes': notesController.text.isNotEmpty ? notesController.text : null,
+          'email':
+              emailController.text.isNotEmpty ? emailController.text : null,
+          'phone':
+              phoneController.text.isNotEmpty ? phoneController.text : null,
+          'address':
+              addressController.text.isNotEmpty ? addressController.text : null,
+          'notes':
+              notesController.text.isNotEmpty ? notesController.text : null,
           'category_id': selectedCategory?.id,
         };
 
@@ -120,9 +126,9 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
           _isLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     }
   }
@@ -130,21 +136,22 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
   Future<void> _deletePatient() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Delete'),
-        content: Text('Are you sure you want to delete ${patient.name}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Confirm Delete'),
+            content: Text('Are you sure you want to delete ${patient.name}?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Delete'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
     );
 
     if (confirm == true) {
@@ -169,9 +176,9 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
           _isLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     }
   }
@@ -194,10 +201,7 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
               },
             ),
           if (_isEditing)
-            IconButton(
-              icon: const Icon(Icons.save),
-              onPressed: _updatePatient,
-            ),
+            IconButton(icon: const Icon(Icons.save), onPressed: _updatePatient),
           if (!_isEditing)
             IconButton(
               icon: const Icon(Icons.delete),
@@ -205,11 +209,12 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
             ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _isEditing
-          ? _buildEditForm()
-          : _buildPatientDetails(),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _isEditing
+              ? _buildEditForm()
+              : _buildPatientDetails(),
     );
   }
 
@@ -230,9 +235,10 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
                   Row(
                     children: [
                       CircleAvatar(
-                        backgroundColor: patient.gender == 'Female'
-                            ? Colors.pink
-                            : Colors.blue,
+                        backgroundColor:
+                            patient.gender == 'Female'
+                                ? Colors.pink
+                                : Colors.blue,
                         radius: 30,
                         child: const Icon(
                           Icons.person,
@@ -255,9 +261,7 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
                             const SizedBox(height: 4),
                             Text(
                               'Patient ID: ${patient.patientId}',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                              ),
+                              style: TextStyle(color: Colors.grey[600]),
                             ),
                           ],
                         ),
@@ -267,7 +271,10 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
                   const SizedBox(height: 16),
                   const Divider(),
                   const SizedBox(height: 8),
-                  _buildInfoRow('Age', patient.age?.toString() ?? 'Not specified'),
+                  _buildInfoRow(
+                    'Age',
+                    patient.age?.toString() ?? 'Not specified',
+                  ),
                   _buildInfoRow('Gender', patient.gender ?? 'Not specified'),
                   if (patient.categoryName != null)
                     _buildInfoRow('Category', patient.categoryName!),
@@ -287,10 +294,7 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
                 children: [
                   const Text(
                     'Contact Information',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   _buildInfoRow('Email', patient.email ?? 'Not provided'),
@@ -312,10 +316,7 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
                 children: [
                   const Text(
                     'Notes',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -330,7 +331,8 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
           ),
 
           // Medical history card (if implemented)
-          if (patient.medicalHistory != null && patient.medicalHistory!.isNotEmpty)
+          if (patient.medicalHistory != null &&
+              patient.medicalHistory!.isNotEmpty)
             Column(
               children: [
                 const SizedBox(height: 16),
@@ -380,9 +382,7 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontWeight: FontWeight.w400,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w400),
             ),
           ),
         ],
@@ -453,12 +453,13 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
                   border: OutlineInputBorder(),
                 ),
                 value: selectedCategory,
-                items: categories.map((category) {
-                  return DropdownMenuItem<Category>(
-                    value: category,
-                    child: Text(category.name),
-                  );
-                }).toList(),
+                items:
+                    categories.map((category) {
+                      return DropdownMenuItem<Category>(
+                        value: category,
+                        child: Text(category.name),
+                      );
+                    }).toList(),
                 onChanged: (value) {
                   setState(() {
                     selectedCategory = value;

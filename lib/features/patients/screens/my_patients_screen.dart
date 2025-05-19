@@ -1,3 +1,4 @@
+// lib/features/patients/screens/my_patients_screen.dart
 import 'package:flutter/material.dart';
 import '../../../models/category.dart';
 import '../../../models/patient.dart';
@@ -13,9 +14,7 @@ class MyPatientsScreen extends StatefulWidget {
 }
 
 class _MyPatientsScreenState extends State<MyPatientsScreen> {
-  final PatientService _patientService = PatientService(
-    baseUrl: 'http://localhost/my_patients_api', // Update with your API URL
-  );
+  final PatientService _patientService = PatientService();  // Updated constructor
 
   bool _isLoading = true;
   String? _error;
