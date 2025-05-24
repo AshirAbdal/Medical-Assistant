@@ -57,7 +57,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final formattedDisplayDate = DateFormat('MMMM dd, yyyy').format(selectedDate);
+    final formattedDisplayDate = DateFormat(
+      'MMMM dd, yyyy',
+    ).format(selectedDate);
     final appointmentsForSelectedDate = getAppointmentsForDate(selectedDate);
     final formattedDisplayMonth = DateFormat('MMMM yyyy').format(selectedDate);
 
@@ -161,13 +163,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   itemCount: _getDaysInMonth().length,
                   itemBuilder: (context, index) {
                     final day = _getDaysInMonth()[index];
-                    final isSelected = day != null &&
+                    final isSelected =
+                        day != null &&
                         day.day == selectedDate.day &&
                         day.month == selectedDate.month &&
                         day.year == selectedDate.year;
 
-                    final hasAppointments = day != null &&
-                        appointments[DateFormat('yyyy-MM-dd').format(day)]?.isNotEmpty == true;
+                    final hasAppointments =
+                        day != null &&
+                        appointments[DateFormat('yyyy-MM-dd').format(day)]
+                                ?.isNotEmpty ==
+                            true;
 
                     return GestureDetector(
                       onTap: () {
@@ -180,19 +186,26 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       child: Container(
                         margin: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF4c5c97) : Colors.transparent,
+                          color:
+                              isSelected
+                                  ? const Color(0xFF4c5c97)
+                                  : Colors.transparent,
                           shape: BoxShape.circle,
                         ),
                         child: Center(
                           child: Text(
                             day?.day.toString() ?? '',
                             style: TextStyle(
-                              color: isSelected
-                                  ? Colors.white
-                                  : (hasAppointments ? Colors.blue : Colors.black87),
-                              fontWeight: isSelected || hasAppointments
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
+                              color:
+                                  isSelected
+                                      ? Colors.white
+                                      : (hasAppointments
+                                          ? Colors.blue
+                                          : Colors.black87),
+                              fontWeight:
+                                  isSelected || hasAppointments
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
                             ),
                           ),
                         ),
@@ -236,18 +249,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               ),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.event_busy,
-                    size: 50,
-                    color: Colors.grey[400],
-                  ),
+                  Icon(Icons.event_busy, size: 50, color: Colors.grey[400]),
                   const SizedBox(height: 16),
                   Text(
                     'No appointments for this day',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
@@ -264,100 +270,111 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               ),
             )
           else
-            ...appointmentsForSelectedDate.map((appointment) => Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 2,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Column(
-                    children: [
-                      Text(
-                        appointment['time'],
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Colors.deepPurple,
+            ...appointmentsForSelectedDate
+                .map(
+                  (appointment) => Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          spreadRadius: 1,
+                          blurRadius: 2,
+                          offset: const Offset(0, 1),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: appointment['color'],
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      ],
+                    ),
+                    child: Row(
                       children: [
-                        Text(
-                          appointment['name'],
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                        Column(
+                          children: [
+                            Text(
+                              appointment['time'],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Colors.deepPurple,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: appointment['color'],
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                appointment['name'],
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                appointment['type'],
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          appointment['type'],
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
+                        IconButton(
+                          icon: const Icon(Icons.more_vert),
+                          onPressed: () {
+                            // Show appointment options
+                            showModalBottomSheet(
+                              context: context,
+                              builder:
+                                  (context) => Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ListTile(
+                                        leading: const Icon(Icons.edit),
+                                        title: const Text('Edit Appointment'),
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                          // Edit appointment action
+                                        },
+                                      ),
+                                      ListTile(
+                                        leading: const Icon(
+                                          Icons.delete,
+                                          color: Colors.red,
+                                        ),
+                                        title: const Text(
+                                          'Cancel Appointment',
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                          // Cancel appointment action
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                            );
+                          },
                         ),
                       ],
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.more_vert),
-                    onPressed: () {
-                      // Show appointment options
-                      showModalBottomSheet(
-                        context: context,
-                        builder: (context) => Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.edit),
-                              title: const Text('Edit Appointment'),
-                              onTap: () {
-                                Navigator.pop(context);
-                                // Edit appointment action
-                              },
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.delete, color: Colors.red),
-                              title: const Text('Cancel Appointment', style: TextStyle(color: Colors.red)),
-                              onTap: () {
-                                Navigator.pop(context);
-                                // Cancel appointment action
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            )).toList(),
+                )
+                .toList(),
         ],
       ),
     );
@@ -365,7 +382,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   // Helper method to generate calendar days
   List<DateTime?> _getDaysInMonth() {
-    final daysInMonth = DateTime(selectedDate.year, selectedDate.month + 1, 0).day;
+    final daysInMonth =
+        DateTime(selectedDate.year, selectedDate.month + 1, 0).day;
     final firstDayOfMonth = DateTime(selectedDate.year, selectedDate.month, 1);
     final firstWeekday = firstDayOfMonth.weekday % 7; // 0 for Sunday
 
@@ -373,7 +391,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
     // Fill in the days of the selected month
     for (int i = 0; i < daysInMonth; i++) {
-      result[firstWeekday + i] = DateTime(selectedDate.year, selectedDate.month, i + 1);
+      result[firstWeekday + i] = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        i + 1,
+      );
     }
 
     return result;

@@ -1,3 +1,4 @@
+// lib/features/auth/screens/login_screen.dart
 import 'package:flutter/material.dart';
 import '../../../dashboard/screens/Dashboard.dart';
 import '../../../services/auth_service.dart';
@@ -69,11 +70,18 @@ class _LoginscreenState extends State<Loginscreen> {
         });
 
         if (response['success']) {
+          // Get user role for welcome message
+          final userRole = response['user']?['role'] ?? 'doctor';
+          final roleDisplay = userRole == 'doctor' ? 'Doctor (Mobile Access)' 
+                            : userRole == 'admin' ? 'Administrator' 
+                            : 'Doctor & Admin';
+          
           // Handle successful login
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Login Successful!'),
+            SnackBar(
+              content: Text('Welcome! Logged in as $roleDisplay'),
               backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
             ),
           );
 

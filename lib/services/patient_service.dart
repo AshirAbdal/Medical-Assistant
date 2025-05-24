@@ -30,6 +30,21 @@ class PatientService {
     // baseUrl = '$protocol://192.168.1.100/my_patients_api';
   }
 
+  // Helper method to get headers with app type identification
+  Map<String, String> _getHeaders({String? sessionId}) {
+    final headers = {
+      'Content-Type': 'application/json',
+      'X-App-Type': 'mobile', // Identify this as mobile app
+    };
+    
+    if (sessionId != null) {
+      headers['X-Session-ID'] = sessionId;
+      headers['Cookie'] = 'PHPSESSID=$sessionId';
+    }
+    
+    return headers;
+  }
+
   Future<List<Patient>> getMyPatients({int? categoryId}) async {
     try {
       // Get session ID from storage
@@ -48,17 +63,10 @@ class PatientService {
 
       print("Fetching patients from: $url");
 
-      // Create a Map of headers including both the session ID header and cookies
-      final headers = {
-        'Content-Type': 'application/json',
-        'X-Session-ID': sessionId,
-        'Cookie': 'PHPSESSID=$sessionId'
-      };
-
       // Make API request with session ID in both header and cookie
       final response = await http.get(
         Uri.parse(url),
-        headers: headers
+        headers: _getHeaders(sessionId: sessionId)
       );
 
       print("Patient API response status: ${response.statusCode}");
@@ -98,6 +106,9 @@ class PatientService {
       } else if (response.statusCode == 401) {
         // Handle authentication error
         throw Exception('Authentication failed. Please login again.');
+      } else if (response.statusCode == 403) {
+        // Handle access denied
+        throw Exception('Access denied. You do not have permission to access this resource.');
       } else {
         // Handle other HTTP errors
         throw Exception('Server error: ${response.statusCode}');
@@ -119,17 +130,10 @@ class PatientService {
         throw Exception('Not authenticated');
       }
 
-      // Create a Map of headers including both the session ID header and cookies
-      final headers = {
-        'Content-Type': 'application/json',
-        'X-Session-ID': sessionId,
-        'Cookie': 'PHPSESSID=$sessionId'
-      };
-
       // Make API request with session ID in both header and cookie
       final response = await http.get(
         Uri.parse('$baseUrl/categories'),
-        headers: headers
+        headers: _getHeaders(sessionId: sessionId)
       );
 
       print("Categories API response status: ${response.statusCode}");
@@ -169,6 +173,9 @@ class PatientService {
       } else if (response.statusCode == 401) {
         // Handle authentication error
         throw Exception('Authentication failed. Please login again.');
+      } else if (response.statusCode == 403) {
+        // Handle access denied
+        throw Exception('Access denied. You do not have permission to access this resource.');
       } else {
         // Handle other HTTP errors
         throw Exception('Server error: ${response.statusCode}');
@@ -190,17 +197,10 @@ class PatientService {
         throw Exception('Not authenticated');
       }
 
-      // Create a Map of headers including both the session ID header and cookies
-      final headers = {
-        'Content-Type': 'application/json',
-        'X-Session-ID': sessionId,
-        'Cookie': 'PHPSESSID=$sessionId'
-      };
-
       // Make API request with session ID in both header and cookie
       final response = await http.post(
         Uri.parse('$baseUrl/patients'),
-        headers: headers,
+        headers: _getHeaders(sessionId: sessionId),
         body: jsonEncode(patientData)
       );
 
@@ -225,6 +225,9 @@ class PatientService {
       } else if (response.statusCode == 401) {
         // Handle authentication error
         throw Exception('Authentication failed. Please login again.');
+      } else if (response.statusCode == 403) {
+        // Handle access denied
+        throw Exception('Access denied. You do not have permission to add patients.');
       } else {
         // Handle other HTTP errors
         throw Exception('Server error: ${response.statusCode}');
@@ -246,17 +249,10 @@ class PatientService {
         throw Exception('Not authenticated');
       }
 
-      // Create a Map of headers including both the session ID header and cookies
-      final headers = {
-        'Content-Type': 'application/json',
-        'X-Session-ID': sessionId,
-        'Cookie': 'PHPSESSID=$sessionId'
-      };
-
       // Make API request with session ID in both header and cookie
       final response = await http.put(
         Uri.parse('$baseUrl/patients/$patientId'),
-        headers: headers,
+        headers: _getHeaders(sessionId: sessionId),
         body: jsonEncode(patientData)
       );
 
@@ -281,6 +277,9 @@ class PatientService {
       } else if (response.statusCode == 401) {
         // Handle authentication error
         throw Exception('Authentication failed. Please login again.');
+      } else if (response.statusCode == 403) {
+        // Handle access denied
+        throw Exception('Access denied. You do not have permission to update patients.');
       } else {
         // Handle other HTTP errors
         throw Exception('Server error: ${response.statusCode}');
@@ -302,17 +301,10 @@ class PatientService {
         throw Exception('Not authenticated');
       }
 
-      // Create a Map of headers including both the session ID header and cookies
-      final headers = {
-        'Content-Type': 'application/json',
-        'X-Session-ID': sessionId,
-        'Cookie': 'PHPSESSID=$sessionId'
-      };
-
       // Make API request with session ID in both header and cookie
       final response = await http.delete(
         Uri.parse('$baseUrl/patients/$patientId'),
-        headers: headers
+        headers: _getHeaders(sessionId: sessionId)
       );
 
       print("Delete patient API response status: ${response.statusCode}");
@@ -324,6 +316,9 @@ class PatientService {
       } else if (response.statusCode == 401) {
         // Handle authentication error
         throw Exception('Authentication failed. Please login again.');
+      } else if (response.statusCode == 403) {
+        // Handle access denied
+        throw Exception('Access denied. You do not have permission to delete patients.');
       } else {
         // Handle other HTTP errors
         throw Exception('Server error: ${response.statusCode}');
@@ -344,16 +339,9 @@ class PatientService {
         return {'success': false, 'message': 'No session ID found'};
       }
       
-      // Create a Map of headers including both the session ID header and cookies
-      final headers = {
-        'Content-Type': 'application/json',
-        'X-Session-ID': sessionId,
-        'Cookie': 'PHPSESSID=$sessionId'
-      };
-      
       final response = await http.get(
         Uri.parse('$baseUrl/patients'),
-        headers: headers
+        headers: _getHeaders(sessionId: sessionId)
       );
       
       return {

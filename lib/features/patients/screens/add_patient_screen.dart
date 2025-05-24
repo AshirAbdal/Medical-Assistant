@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../../models/category.dart';
 import '../../../services/patient_service.dart';
+import '../../../services/storage_service.dart';
 
 class AddPatientScreen extends StatefulWidget {
   const AddPatientScreen({super.key});
@@ -25,13 +26,32 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   bool _isLoading = true;
   String? _error;
 
-  // Updated constructor without parameters
+  // Services
   final PatientService _patientService = PatientService();
+  final StorageService _storageService = StorageService();
 
   @override
   void initState() {
     super.initState();
+    _checkPermissions();
     _loadCategories();
+  }
+
+  Future<void> _checkPermissions() async {
+    final permissions = await _storageService.getUserPermissions();
+    final canAdd = permissions?['canAddPatients'] ?? false;
+    
+    if (!canAdd) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You do not have permission to add patients'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      });
+    }
   }
 
   Future<void> _loadCategories() async {

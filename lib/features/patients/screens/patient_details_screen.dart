@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../models/category.dart';
 import '../../../models/patient.dart';
 import '../../../services/patient_service.dart';
+import '../../../services/storage_service.dart';
 
 class PatientDetailsScreen extends StatefulWidget {
   final Patient patient;
@@ -30,8 +31,9 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
   late TextEditingController notesController;
   String? selectedGender;
 
-  // Updated constructor without parameters
+  // Services
   final PatientService _patientService = PatientService();
+  final StorageService _storageService = StorageService();
 
   @override
   void initState() {
@@ -49,6 +51,16 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
     addressController = TextEditingController(text: patient.address ?? '');
     notesController = TextEditingController(text: patient.notes ?? '');
     selectedGender = patient.gender;
+  }
+
+  Future<bool> _canEditPatient() async {
+    final permissions = await _storageService.getUserPermissions();
+    return permissions?['canEditPatients'] ?? false;
+  }
+
+  Future<bool> _canDeletePatient() async {
+    final permissions = await _storageService.getUserPermissions();
+    return permissions?['canDeletePatients'] ?? false;
   }
 
   Future<void> _loadCategories() async {
@@ -192,20 +204,39 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
         foregroundColor: Colors.white,
         actions: [
           if (!_isEditing)
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                setState(() {
-                  _isEditing = true;
-                });
+            FutureBuilder<bool>(
+              future: _canEditPatient(),
+              builder: (context, snapshot) {
+                if (snapshot.data == true) {
+                  return IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () {
+                      setState(() {
+                        _isEditing = true;
+                      });
+                    },
+                  );
+                }
+                return const SizedBox.shrink();
               },
             ),
           if (_isEditing)
-            IconButton(icon: const Icon(Icons.save), onPressed: _updatePatient),
-          if (!_isEditing)
             IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: _deletePatient,
+              icon: const Icon(Icons.save),
+              onPressed: _updatePatient,
+            ),
+          if (!_isEditing)
+            FutureBuilder<bool>(
+              future: _canDeletePatient(),
+              builder: (context, snapshot) {
+                if (snapshot.data == true) {
+                  return IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: _deletePatient,
+                  );
+                }
+                return const SizedBox.shrink();
+              },
             ),
         ],
       ),

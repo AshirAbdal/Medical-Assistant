@@ -84,6 +84,21 @@ class AuthService {
     // baseUrl = '$protocol://192.168.1.100/my_patients_api';
   }
 
+  // Helper method to get headers with app type identification
+  Map<String, String> _getHeaders({String? sessionId}) {
+    final headers = {
+      'Content-Type': 'application/json',
+      'X-App-Type': 'mobile', // Identify this as mobile app
+    };
+    
+    if (sessionId != null) {
+      headers['X-Session-ID'] = sessionId;
+      headers['Cookie'] = 'PHPSESSID=$sessionId';
+    }
+    
+    return headers;
+  }
+
   // Method to ensure session is active after login
   Future<void> _ensureSessionActive(String sessionId) async {
     try {
@@ -92,11 +107,7 @@ class AuthService {
       // First, try the validate_session endpoint
       var response = await http.get(
         Uri.parse('$baseUrl/validate_session'),
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Session-ID': sessionId,
-          'Cookie': 'PHPSESSID=$sessionId',
-        },
+        headers: _getHeaders(sessionId: sessionId),
       );
 
       print(
@@ -107,11 +118,7 @@ class AuthService {
       if (response.statusCode != 200) {
         response = await http.get(
           Uri.parse('$baseUrl/patients'),
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Session-ID': sessionId,
-            'Cookie': 'PHPSESSID=$sessionId',
-          },
+          headers: _getHeaders(sessionId: sessionId),
         );
 
         print(
@@ -122,8 +129,6 @@ class AuthService {
       print("Error ensuring session: $e");
     }
   }
-
-  //IMPORTANT: Update in auth_service.dart
 
   // Enhanced login with input validation and rate limiting
   Future<Map<String, dynamic>> login(String email, String password) async {
@@ -179,7 +184,7 @@ class AuthService {
       // Make login request with clean URL
       final response = await http.post(
         Uri.parse('$baseUrl/login'),
-        headers: {'Content-Type': 'application/json'},
+        headers: _getHeaders(),
         body: jsonEncode({'email': sanitizedEmail, 'password': password}),
       );
 
@@ -201,6 +206,17 @@ class AuthService {
         if (responseData['user'] != null) {
           print('Saving user data: ${responseData['user']}');
           await _storageService.saveUserData(responseData['user']);
+
+          // Save role and permissions separately for easy access
+          if (responseData['user']['role'] != null) {
+            await _storageService.saveUserRole(responseData['user']['role']);
+          }
+          
+          if (responseData['user']['permissions'] != null) {
+            await _storageService.saveUserPermissions(
+              responseData['user']['permissions']
+            );
+          }
 
           // Save categories data if available
           if (responseData['user']['categories'] != null) {
@@ -274,12 +290,7 @@ class AuthService {
 
       final response = await http.get(
         Uri.parse('$baseUrl/validate_session'),
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Session-ID': sessionId,
-          'Cookie':
-              'PHPSESSID=$sessionId', // Try adding the session as a cookie too
-        },
+        headers: _getHeaders(sessionId: sessionId),
       );
 
       print("Session test status: ${response.statusCode}");
@@ -308,16 +319,9 @@ class AuthService {
 
       print("validateSession: Testing with session ID: $sessionId");
 
-      // Create a Map of headers including both the session ID header and cookies
-      final headers = {
-        'Content-Type': 'application/json',
-        'X-Session-ID': sessionId,
-        'Cookie': 'PHPSESSID=$sessionId',
-      };
-
       final response = await http.get(
         Uri.parse('$baseUrl/validate_session'),
-        headers: headers,
+        headers: _getHeaders(sessionId: sessionId),
       );
 
       print("validateSession status: ${response.statusCode}");
@@ -329,6 +333,17 @@ class AuthService {
         // Save updated user data if available
         if (responseData['success'] && responseData['user'] != null) {
           await _storageService.saveUserData(responseData['user']);
+
+          // Update role and permissions if changed
+          if (responseData['user']['role'] != null) {
+            await _storageService.saveUserRole(responseData['user']['role']);
+          }
+          
+          if (responseData['user']['permissions'] != null) {
+            await _storageService.saveUserPermissions(
+              responseData['user']['permissions']
+            );
+          }
 
           // Save categories data if available
           if (responseData['user']['categories'] != null) {
@@ -344,6 +359,27 @@ class AuthService {
     } catch (e) {
       print('Session validation error: ${e.toString()}');
       return false;
+    }
+  }
+
+  // Method to check if user can access certain features
+  Future<bool> canAccessFeature(String feature) async {
+    final permissions = await _storageService.getUserPermissions();
+    if (permissions == null) return false;
+    
+    switch (feature) {
+      case 'patients':
+        return permissions['canViewPatients'] ?? false;
+      case 'appointments':
+        return permissions['canManageAppointments'] ?? false;
+      case 'billing':
+        return permissions['canViewBilling'] ?? false;
+      case 'admin':
+        return permissions['canAccessAdmin'] ?? false;
+      case 'web':
+        return permissions['canAccessWeb'] ?? false;
+      default:
+        return false;
     }
   }
 
@@ -366,11 +402,7 @@ class AuthService {
 
       final response = await http.get(
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Session-ID': sessionId,
-          'Cookie': 'PHPSESSID=$sessionId', // Add cookie for PHP sessions
-        },
+        headers: _getHeaders(sessionId: sessionId),
       );
 
       print("getPatients status: ${response.statusCode}");
@@ -400,11 +432,7 @@ class AuthService {
 
       final response = await http.get(
         Uri.parse('$baseUrl/categories'),
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Session-ID': sessionId,
-          'Cookie': 'PHPSESSID=$sessionId', // Add cookie for PHP sessions
-        },
+        headers: _getHeaders(sessionId: sessionId),
       );
 
       print("getCategories status: ${response.statusCode}");
@@ -432,11 +460,7 @@ class AuthService {
         // Call logout API with session ID
         await http.post(
           Uri.parse('$baseUrl/logout'),
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Session-ID': sessionId,
-            'Cookie': 'PHPSESSID=$sessionId', // Add cookie for PHP sessions
-          },
+          headers: _getHeaders(sessionId: sessionId),
         );
       }
 
@@ -462,11 +486,7 @@ class AuthService {
 
       final response = await http.get(
         Uri.parse('$baseUrl/$endpoint'),
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Session-ID': sessionId,
-          'Cookie': 'PHPSESSID=$sessionId',
-        },
+        headers: _getHeaders(sessionId: sessionId),
       );
 
       return {

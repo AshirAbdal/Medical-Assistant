@@ -9,6 +9,8 @@ class StorageService {
   static const String userKey = 'user_data';
   static const String sessionIdKey = 'session_id';
   static const String categoriesKey = 'doctor_categories';
+  static const String userRoleKey = 'user_role';
+  static const String userPermissionsKey = 'user_permissions';
 
   // Use secure storage for sensitive information
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
@@ -41,6 +43,30 @@ class StorageService {
       }
     } catch (e) {
       print('Error saving session ID: $e');
+    }
+  }
+
+  // Save user role
+  Future<bool> saveUserRole(String role) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      print('Saving user role: $role');
+      return prefs.setString(userRoleKey, role);
+    } catch (e) {
+      print('Error saving user role: $e');
+      return false;
+    }
+  }
+  
+  // Save user permissions
+  Future<bool> saveUserPermissions(Map<String, dynamic> permissions) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      print('Saving user permissions: ${jsonEncode(permissions)}');
+      return prefs.setString(userPermissionsKey, jsonEncode(permissions));
+    } catch (e) {
+      print('Error saving user permissions: $e');
+      return false;
     }
   }
 
@@ -89,6 +115,39 @@ class StorageService {
     }
   }
   
+  // Get user role
+  Future<String?> getUserRole() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final role = prefs.getString(userRoleKey);
+      print('Retrieved user role: $role');
+      return role;
+    } catch (e) {
+      print('Error getting user role: $e');
+      return null;
+    }
+  }
+  
+  // Get user permissions
+  Future<Map<String, dynamic>?> getUserPermissions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final permissionsStr = prefs.getString(userPermissionsKey);
+      
+      if (permissionsStr != null) {
+        final permissions = jsonDecode(permissionsStr) as Map<String, dynamic>;
+        print('Retrieved user permissions: $permissions');
+        return permissions;
+      }
+      
+      print('No user permissions found in storage');
+      return null;
+    } catch (e) {
+      print('Error getting user permissions: $e');
+      return null;
+    }
+  }
+  
   // Get doctor categories as raw maps
   Future<List<Map<String, dynamic>>> getCategories() async {
     try {
@@ -132,12 +191,31 @@ class StorageService {
     }
   }
 
+  // Check if user is doctor only (restricted access)
+  Future<bool> isDoctorOnly() async {
+    final role = await getUserRole();
+    return role == 'doctor';
+  }
+  
+  // Check if user has admin access
+  Future<bool> hasAdminAccess() async {
+    final role = await getUserRole();
+    return role == 'admin' || role == 'doctor_admin';
+  }
+  
+  // Check if user can access web
+  Future<bool> canAccessWeb() async {
+    final role = await getUserRole();
+    return role == 'admin' || role == 'doctor_admin';
+  }
+
   // Check if user is logged in
   Future<bool> isLoggedIn() async {
     try {
       final sessionId = await getSessionId();
       final userData = await getUserData();
-      return sessionId != null && userData != null;
+      final userRole = await getUserRole();
+      return sessionId != null && userData != null && userRole != null;
     } catch (e) {
       print('Error checking login status: $e');
       return false;
@@ -156,6 +234,41 @@ class StorageService {
     } catch (e) {
       print('Error clearing storage: $e');
       return false;
+    }
+  }
+  
+  // Get user display info (name and role)
+  Future<Map<String, String>> getUserDisplayInfo() async {
+    try {
+      final userData = await getUserData();
+      final role = await getUserRole();
+      
+      if (userData != null) {
+        return {
+          'name': userData['name'] ?? 'User',
+          'email': userData['email'] ?? '',
+          'role': _formatRole(role ?? 'doctor'),
+        };
+      }
+      
+      return {'name': 'User', 'email': '', 'role': 'Unknown'};
+    } catch (e) {
+      print('Error getting user display info: $e');
+      return {'name': 'User', 'email': '', 'role': 'Unknown'};
+    }
+  }
+  
+  // Helper method to format role for display
+  String _formatRole(String role) {
+    switch (role) {
+      case 'doctor':
+        return 'Doctor';
+      case 'admin':
+        return 'Administrator';
+      case 'doctor_admin':
+        return 'Doctor & Admin';
+      default:
+        return 'Unknown';
     }
   }
 }

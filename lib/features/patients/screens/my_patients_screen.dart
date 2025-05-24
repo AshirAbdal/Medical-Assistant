@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../models/category.dart';
 import '../../../models/patient.dart';
 import '../../../services/patient_service.dart';
+import '../../../services/storage_service.dart';
 import '../screens/patient_details_screen.dart';
 import '../screens/add_patient_screen.dart';
 
@@ -15,6 +16,7 @@ class MyPatientsScreen extends StatefulWidget {
 
 class _MyPatientsScreenState extends State<MyPatientsScreen> {
   final PatientService _patientService = PatientService();  // Updated constructor
+  final StorageService _storageService = StorageService();
 
   bool _isLoading = true;
   String? _error;
@@ -78,6 +80,8 @@ class _MyPatientsScreenState extends State<MyPatientsScreen> {
     });
     _loadData();
   }
+
+
 
   Future<void> _navigateToAddPatient() async {
     final result = await Navigator.push(
@@ -181,88 +185,97 @@ class _MyPatientsScreenState extends State<MyPatientsScreen> {
             child:
                 patients.isEmpty
                     ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.person_off,
-                            size: 64,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            selectedCategory != null
-                                ? 'No patients in ${selectedCategory!.name} category'
-                                : 'No patients found',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.person_off,
+                              size: 64,
+                              color: Colors.grey[400],
                             ),
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.add),
-                            label: const Text('Add Patient'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF4caf50),
-                              foregroundColor: Colors.white,
-                            ),
-                            onPressed: _navigateToAddPatient,
-                          ),
-                        ],
-                      ),
-                    )
-                    : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: patients.length,
-                      itemBuilder: (context, index) {
-                        final patient = patients[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          elevation: 1,
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor:
-                                  patient.gender == 'Female'
-                                      ? Colors.pink
-                                      : Colors.blue,
-                              child: const Icon(
-                                Icons.person,
-                                color: Colors.white,
+                            const SizedBox(height: 16),
+                            Text(
+                              selectedCategory != null
+                                  ? 'No patients in ${selectedCategory!.name} category'
+                                  : 'No patients found',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[600],
                               ),
                             ),
-                            title: Text(
-                              patient.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Age: ${patient.age ?? 'N/A'}   Gender: ${patient.gender ?? 'N/A'}',
-                                ),
-                                Text('ID: ${patient.patientId}'),
-                                if (patient.categoryName != null)
-                                  Chip(
-                                    label: Text(
-                                      patient.categoryName!,
-                                      style: const TextStyle(fontSize: 12),
+                            const SizedBox(height: 24),
+                            FutureBuilder<Map<String, dynamic>?>(
+                              future: _storageService.getUserPermissions(),
+                              builder: (context, snapshot) {
+                                final canAdd = snapshot.data?['canAddPatients'] ?? false;
+                                if (canAdd) {
+                                  return ElevatedButton.icon(
+                                    icon: const Icon(Icons.add),
+                                    label: const Text('Add Patient'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF4caf50),
+                                      foregroundColor: Colors.white,
                                     ),
-                                    backgroundColor: Colors.green[50],
-                                    padding: EdgeInsets.zero,
-                                    visualDensity: VisualDensity.compact,
-                                  ),
-                              ],
+                                    onPressed: _navigateToAddPatient,
+                                  );
+                                }
+                                return const SizedBox.shrink();
+                              },
                             ),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () => _navigateToPatientDetails(patient),
-                          ),
-                        );
-                      },
-                    ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: patients.length,
+                        itemBuilder: (context, index) {
+                          final patient = patients[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            elevation: 1,
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor:
+                                    patient.gender == 'Female'
+                                        ? Colors.pink
+                                        : Colors.blue,
+                                child: const Icon(
+                                  Icons.person,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              title: Text(
+                                patient.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Age: ${patient.age ?? 'N/A'}   Gender: ${patient.gender ?? 'N/A'}',
+                                  ),
+                                  Text('ID: ${patient.patientId}'),
+                                  if (patient.categoryName != null)
+                                    Chip(
+                                      label: Text(
+                                        patient.categoryName!,
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                      backgroundColor: Colors.green[50],
+                                      padding: EdgeInsets.zero,
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                ],
+                              ),
+                              trailing: const Icon(Icons.chevron_right),
+                              onTap: () => _navigateToPatientDetails(patient),
+                            ),
+                          );
+                        },
+                      ),
           ),
         ),
       ],
